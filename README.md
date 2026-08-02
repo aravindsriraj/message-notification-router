@@ -1,9 +1,10 @@
 # Message Notification Router
 
-A personalized notification router for WhatsApp-style messaging. For every incoming message it
-decides whether to **notify** (interrupt now), **digest** (show later), or **mute** (suppress as
-low-value, repetitive, unwanted, or unsafe) — reasoning over text, image posters/screenshots, and
-voice notes, and personalizing the decision to each recipient's own behavior and history.
+An AI-powered, hybrid notification router for WhatsApp-style messaging. For every incoming
+message an LLM (Gemini) decides whether to **notify** (interrupt now), **digest** (show later),
+or **mute** (suppress as low-value, repetitive, unwanted, or unsafe) — reasoning over text, image
+posters/screenshots, and voice notes, and personalizing the decision to each recipient's own
+behavior and history.
 
 See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for a full technical deep-dive with real examples.
 
@@ -19,17 +20,19 @@ Notification routing can't be one-size-fits-all:
 
 ## Approach
 
-A deterministic Python feature layer (`code/features/`) joins user, group, business, and
+This is a **hybrid AI system**: an LLM (Gemini) makes every final routing decision, backed by a
+deterministic Python feature layer that hands it verified, structured context instead of raw
+guesswork. That feature layer (`code/features/`) joins user, group, business, and
 historical-message data to build per-message context: recipient engagement/dismissal history,
 group trust/mute state or business verification/opt-in state, quiet hours, and a scored
 shortlist of real candidate evidence messages from that user's own history. Image and
-voice-note media are described/transcribed via Gemini before classification (`code/media/`). A
-single Gemini call per message (`code/llm/`) then makes the final judgment with structured JSON
-output — `evidence_message_ids` are restricted at the schema level to the real shortlisted
-candidates (so hallucinated IDs are impossible), and the system prompt carries an explicit
-guardrail against messages that try to instruct the router directly. Responses are cached by
-message/media ID so reruns are free and deterministic, and a rule-based fallback covers any row
-where the API call fails after retries.
+voice-note media are described/transcribed by Gemini before classification (`code/media/`). A
+single Gemini call per message (`code/llm/`) then reasons over all of this and returns the final
+judgment as structured JSON — `evidence_message_ids` are restricted at the schema level to the
+real shortlisted candidates (so hallucinated IDs are impossible), and the system prompt carries
+an explicit guardrail against messages that try to instruct the router directly. Responses are
+cached by message/media ID for deterministic reruns, and a small rule-based fallback — not the
+primary decision-maker — covers any row where the Gemini API call fails after retries.
 
 ## Output format
 
