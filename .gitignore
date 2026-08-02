@@ -1,0 +1,10 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Local response caches (regenerated on demand)
+code/.cache/
+
+# Secrets
+.env
